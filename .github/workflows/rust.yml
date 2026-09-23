@@ -119,7 +119,7 @@ jobs:
         run: |
           dpkg --add-architecture i386
           apt-get update
-          apt-get install -y build-essential ca-certificates cmake curl git make g++-multilib
+          apt-get install -y build-essential ca-certificates cmake curl file git make g++-multilib
 
       - name: Install stable + i686 target
         uses: dtolnay/rust-toolchain@master
