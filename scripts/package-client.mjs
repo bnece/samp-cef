@@ -82,6 +82,7 @@ const inputs = [
   ...resourceFiles.map((name) => [path.join(cefRoot, "Resources", name), path.join(cefOutputDir, name)]),
   [path.join(cefRoot, "LICENSE.txt"), path.join(cefOutputDir, "LICENSE.txt")],
   [path.join(cefRoot, "CREDITS.html"), path.join(cefOutputDir, "CREDITS.html")],
+  [path.join(rootDir, "LICENSE"), path.join(cefOutputDir, "SAMP-CEF-LICENSE.txt")],
   [path.join(rootDir, "cef-distribution.json"), path.join(cefOutputDir, "cef-distribution.json")],
 ];
 

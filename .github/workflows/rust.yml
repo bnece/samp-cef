@@ -99,6 +99,7 @@ jobs:
           path: |
             cef-openmp.so
             cef-openmp.version
+            LICENSE
 
   build_server_debian:
     runs-on: ubuntu-latest
