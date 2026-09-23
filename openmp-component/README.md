@@ -25,7 +25,7 @@ This installs `cef.*` into `/path/to/omp-server/components`.
 
 The output library is `target/openmp-component-build/cef.*`. Put it into the open.mp `components` directory and add `CEF`/`cef` to the server `components` config list.
 
-The component binds its CEF transport to `network.bind:(network.port + cef.port_offset)`. The default `cef.port_offset` is `2`, matching the SA:MP plugin behavior.
+The component binds its CEF transport to `network.bind:(network.port + cef.port_offset)`. This FayRPG fork defaults `cef.port_offset` to `100`; the packaged client reads the matching value from `cef/config.json`.
 
 ## CMake
 

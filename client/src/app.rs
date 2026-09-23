@@ -29,7 +29,6 @@ use crossbeam_channel::{Receiver, Sender};
 
 use retour::GenericDetour;
 
-const CEF_SERVER_PORT_OFFSET: u16 = 2;
 pub const CEF_PLUGIN_VERSION: i32 = 0x00_01_00;
 const CONNECT_BACKOFF_BASE: Duration = Duration::from_secs(1);
 const CONNECT_BACKOFF_MAX: Duration = Duration::from_secs(10);
@@ -88,6 +87,7 @@ pub struct App {
     connect_backoff: Duration,
     next_connect_attempt: Instant,
     last_audio_spatial_update: Instant,
+    server_port_offset: u16,
 
     manager: Arc<Mutex<Manager>>,
     audio: Arc<Audio>,
@@ -158,6 +158,7 @@ impl App {
             connect_backoff: CONNECT_BACKOFF_BASE,
             next_connect_attempt: Instant::now(),
             last_audio_spatial_update: Instant::now() - AUDIO_SPATIAL_UPDATE_INTERVAL,
+            server_port_offset: crate::configured_port_offset(),
             network: None,
             initialization: Instant::now(),
             manager,
@@ -223,7 +224,16 @@ impl App {
 
             tracing::debug!(game_server = %addr, "SA:MP server detected");
 
-            addr.set_port(addr.port() + CEF_SERVER_PORT_OFFSET);
+            let Some(cef_port) = addr.port().checked_add(self.server_port_offset) else {
+                tracing::error!(
+                    game_port = addr.port(),
+                    port_offset = self.server_port_offset,
+                    "CEF server port is outside the valid range"
+                );
+                self.next_connect_attempt = now + CONNECT_BACKOFF_MAX;
+                return;
+            };
+            addr.set_port(cef_port);
 
             tracing::trace!(
                 server = %addr,

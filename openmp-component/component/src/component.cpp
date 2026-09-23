@@ -28,7 +28,7 @@ using samp_cef::openmp::EventKind;
 using samp_cef::openmp::ServerCore;
 using samp_cef::openmp::ServerEvent;
 
-constexpr int CEF_DEFAULT_PORT_OFFSET = 2;
+constexpr int CEF_DEFAULT_PORT_OFFSET = 100;
 constexpr float CEF_DEFAULT_MAX_DIST = 50.0f;
 constexpr float CEF_DEFAULT_REF_DIST = 15.0f;
 constexpr const char* CEF_GRPC_BROWSER_EVENT_PREFIX = "cef.event.";

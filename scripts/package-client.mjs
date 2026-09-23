@@ -114,6 +114,8 @@ await cp(path.join(cefRoot, "Resources", "locales"), path.join(cefOutputDir, "lo
 
 const packagedFiles = await walk(outputDir);
 const packageManifest = {
+  sourceRepository: process.env.GITHUB_REPOSITORY ?? "bnece/samp-cef",
+  sourceCommit: process.env.GITHUB_SHA ?? "local",
   cefVersion: manifest.cefVersion,
   cefApiVersion: manifest.apiVersion,
   target: "i686-pc-windows-msvc",

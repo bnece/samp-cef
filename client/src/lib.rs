@@ -30,44 +30,55 @@ pub mod utils;
 static INIT: Once = Once::new();
 static LOG_GUARD: OnceLock<tracing_appender::non_blocking::WorkerGuard> = OnceLock::new();
 
-#[derive(Deserialize)]
+const DEFAULT_PORT_OFFSET: u16 = 100;
+
+#[derive(Debug, Deserialize)]
 struct ClientConfig {
     #[serde(default = "default_log_level")]
     log_level: String,
+    #[serde(default = "default_port_offset")]
+    port_offset: u16,
 }
 
 fn default_log_level() -> String {
     "info".to_owned()
 }
 
+const fn default_port_offset() -> u16 {
+    DEFAULT_PORT_OFFSET
+}
+
+fn read_client_config(path: &Path) -> (ClientConfig, Option<String>) {
+    let fallback = || ClientConfig {
+        log_level: default_log_level(),
+        port_offset: default_port_offset(),
+    };
+
+    let contents = match fs::read_to_string(path) {
+        Ok(contents) => contents,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return (fallback(), None),
+        Err(error) => {
+            return (
+                fallback(),
+                Some(format!("cannot read client configuration: {error}")),
+            );
+        }
+    };
+
+    match serde_json::from_str::<ClientConfig>(&contents) {
+        Ok(config) => (config, None),
+        Err(error) => (
+            fallback(),
+            Some(format!("cannot parse client configuration: {error}")),
+        ),
+    }
+}
+
 fn parse_log_level(value: &str) -> Option<LevelFilter> {
     LevelFilter::from_str(value.trim().to_ascii_lowercase().as_str()).ok()
 }
 
-fn read_log_level(path: &Path) -> (LevelFilter, Option<String>) {
-    let contents = match fs::read_to_string(path) {
-        Ok(contents) => contents,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            return (LevelFilter::INFO, None);
-        }
-        Err(error) => {
-            return (
-                LevelFilter::INFO,
-                Some(format!("cannot read logging configuration: {error}")),
-            );
-        }
-    };
-
-    let config = match serde_json::from_str::<ClientConfig>(&contents) {
-        Ok(config) => config,
-        Err(error) => {
-            return (
-                LevelFilter::INFO,
-                Some(format!("cannot parse logging configuration: {error}")),
-            );
-        }
-    };
-
+fn configured_log_level(config: &ClientConfig) -> (LevelFilter, Option<String>) {
     match parse_log_level(&config.log_level) {
         Some(level) => (level, None),
         None => (
@@ -82,7 +93,8 @@ fn read_log_level(path: &Path) -> (LevelFilter, Option<String>) {
 
 fn initialize_logging() {
     let config_path = crate::utils::cef_dir().join("config.json");
-    let (log_level, config_warning) = read_log_level(&config_path);
+    let (config, config_warning) = read_client_config(&config_path);
+    let (log_level, log_warning) = configured_log_level(&config);
     let log_path = crate::utils::game_dir().join("cef_client.log");
     let Ok(log_file) = File::create(&log_path) else {
         return;
@@ -120,7 +132,19 @@ fn initialize_logging() {
         if let Some(warning) = config_warning {
             tracing::warn!(reason = %warning, "logging configuration fallback applied");
         }
+        if let Some(warning) = log_warning {
+            tracing::warn!(reason = %warning, "logging configuration fallback applied");
+        }
     }
+}
+
+pub(crate) fn configured_port_offset() -> u16 {
+    let config_path = crate::utils::cef_dir().join("config.json");
+    let (config, warning) = read_client_config(&config_path);
+    if let Some(warning) = warning {
+        tracing::warn!(reason = %warning, "network configuration fallback applied");
+    }
+    config.port_offset
 }
 
 #[cfg(test)]
@@ -135,7 +159,10 @@ mod tests {
         ));
         let _ = fs::remove_file(&path);
 
-        assert_eq!(read_log_level(&path), (LevelFilter::INFO, None));
+        let (config, warning) = read_client_config(&path);
+        assert!(warning.is_none());
+        assert_eq!(config.log_level, "info");
+        assert_eq!(config.port_offset, DEFAULT_PORT_OFFSET);
     }
 
     #[test]
@@ -147,6 +174,17 @@ mod tests {
         assert_eq!(parse_log_level("debug"), Some(LevelFilter::DEBUG));
         assert_eq!(parse_log_level("trace"), Some(LevelFilter::TRACE));
         assert_eq!(parse_log_level("verbose"), None);
+    }
+
+    #[test]
+    fn parses_custom_port_offset() {
+        let config: ClientConfig = serde_json::from_str(
+            r#"{"log_level":"debug","port_offset":120}"#,
+        )
+        .unwrap();
+
+        assert_eq!(config.port_offset, 120);
+        assert_eq!(configured_log_level(&config), (LevelFilter::DEBUG, None));
     }
 }
 
