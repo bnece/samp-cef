@@ -361,7 +361,7 @@ checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 [[package]]
 name = "client-api"
 version = "1.0.0"
-source = "git+https://github.com/zottce/samp-client-api.git?rev=d497ffad4903d9cc3f02869c744c3c3d96217cbb#d497ffad4903d9cc3f02869c744c3c3d96217cbb"
+source = "git+https://github.com/bnece/samp-client-api.git?rev=b7d7a0ef58444d82e2a516bb7bd8c1133d7806aa#b7d7a0ef58444d82e2a516bb7bd8c1133d7806aa"
 dependencies = [
  "log",
  "retour",
