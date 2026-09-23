@@ -14,7 +14,7 @@ crash_logger = ["winapi/processthreadsapi", "winapi/psapi", "winapi/excpt"]
 
 [dependencies]
 encoding_rs = "0.8.35"
-client-api = { git = "https://github.com/bnece/samp-client-api.git", rev = "b7d7a0ef58444d82e2a516bb7bd8c1133d7806aa" }
+client-api = { git = "https://github.com/bnece/samp-client-api.git", rev = "297dcca0de7a42d2335d01bf52698ad47a979361" }
 cef = { path = "../cef" }
 cef-sys = { path = "../cef-sys" }
 crossbeam-channel = "0.5.15"

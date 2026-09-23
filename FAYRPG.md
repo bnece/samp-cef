@@ -9,10 +9,14 @@ FayRPG. It started from upstream commit
 - The packaged client reads `port_offset` from `cef/config.json`.
 - Linux open.mp artifacts are built and checked as 32-bit x86, matching the
   FayRPG server and its existing components.
-- The client pins `bnece/samp-client-api` commit `b7d7a0e`, which resolves
+- The client pins `bnece/samp-client-api` commit `297dcca`, which resolves
   `samp.dll` from the loaded module instead of the launcher's current working
   directory. This prevents supported 0.3.DL clients started through SAMPFix
   from being reported as an unknown SA:MP version.
+- The same dependency also checks the version resource's `FileVersion` string.
+  Official DL binaries may expose `0.3.7.1` in `VS_FIXEDFILEINFO` while the
+  authoritative string identifies them as `0.3.8.0`; plain 0.3.7 R2 remains
+  unsupported.
 - Client and open.mp component default to a port offset of `100`. FayRPG game
   ports `7777` through `7781` therefore use CEF UDP ports `7877` through
   `7881`, avoiding collisions between server instances.
