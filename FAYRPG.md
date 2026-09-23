@@ -7,6 +7,8 @@ FayRPG. It started from upstream commit
 ## Intentional differences
 
 - The packaged client reads `port_offset` from `cef/config.json`.
+- Linux open.mp artifacts are built and checked as 32-bit x86, matching the
+  FayRPG server and its existing components.
 - Client and open.mp component default to a port offset of `100`. FayRPG game
   ports `7777` through `7781` therefore use CEF UDP ports `7877` through
   `7881`, avoiding collisions between server instances.

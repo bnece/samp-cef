@@ -78,8 +78,14 @@ jobs:
           scripts/build-openmp-component.sh \
             --openmp-root "$GITHUB_WORKSPACE/open.mp" \
             --build-dir "$GITHUB_WORKSPACE/target/openmp-component-build-${{ matrix.os }}" \
+            --cef-cmake-arg "-DSAMP_CEF_RUST_TARGET=i686-unknown-linux-gnu" \
+            --cef-cmake-arg "-DCMAKE_CXX_FLAGS=-m32" \
+            --cef-cmake-arg "-DCMAKE_SHARED_LINKER_FLAGS=-m32" \
             --jobs 2
           strip -s "target/openmp-component-build-${{ matrix.os }}/cef.so" -o cef-openmp.so
+
+      - name: Verify open.mp component architecture
+        run: file cef-openmp.so | grep -Eq 'ELF 32-bit LSB shared object, Intel (80386|i386)'
 
       - name: Record open.mp component provenance
         run: |
@@ -169,8 +175,14 @@ jobs:
           scripts/build-openmp-component.sh \
             --openmp-root "$GITHUB_WORKSPACE/open.mp" \
             --build-dir "$GITHUB_WORKSPACE/target/openmp-component-build-debian-${{ matrix.os }}" \
+            --cef-cmake-arg "-DSAMP_CEF_RUST_TARGET=i686-unknown-linux-gnu" \
+            --cef-cmake-arg "-DCMAKE_CXX_FLAGS=-m32" \
+            --cef-cmake-arg "-DCMAKE_SHARED_LINKER_FLAGS=-m32" \
             --jobs 2
           strip -s "target/openmp-component-build-debian-${{ matrix.os }}/cef.so" -o cef-openmp.so
+
+      - name: Verify open.mp component architecture
+        run: file cef-openmp.so | grep -Eq 'ELF 32-bit LSB shared object, Intel (80386|i386)'
 
       - uses: actions/upload-artifact@v4
         with:
