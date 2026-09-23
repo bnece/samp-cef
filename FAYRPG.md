@@ -12,6 +12,7 @@ FayRPG. It started from upstream commit
   `7881`, avoiding collisions between server instances.
 - The FayRPG workflow builds the Linux component on Ubuntu 22.04 against the
   open.mp `v1.5.8.3079` SDK used by the server image.
+- Client packages contain the local `fayrpg-smoke/index.html` diagnostic page.
 
 Do not commit generated client or server binaries. GitHub Actions artifacts
 are the build products; consumers record the source commit, workflow run and

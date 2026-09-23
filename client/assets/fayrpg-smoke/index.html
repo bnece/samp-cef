@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FayRPG CEF teszt</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0f1d23cc; color: #e0e8e5; }
+    main { width: min(560px, calc(100vw - 48px)); padding: 28px; border: 1px solid #40535a; border-radius: 16px; background: #182a31; box-shadow: 0 20px 70px #0009; }
+    h1 { margin: 0 0 12px; color: #e9be67; }
+    p { line-height: 1.55; }
+    code { color: #7cc5d6; }
+    button { margin-top: 12px; border: 0; border-radius: 9px; padding: 10px 18px; background: #e9be67; color: #112128; font: inherit; font-weight: 700; cursor: pointer; }
+    #status { color: #6bc46d; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>FayRPG CEF rendben</h1>
+    <p id="status">A helyi HTML/CSS/JavaScript felület betöltődött.</p>
+    <p>CEF API: <code id="api">ellenőrzés...</code></p>
+    <button id="close" type="button">Bezárás</button>
+    <p>Az <kbd>Escape</kbd> billentyűvel is bezárható.</p>
+  </main>
+  <script>
+    const available = typeof window.cef === "object";
+    document.getElementById("api").textContent = available ? (cef.version ?? "elérhető") : "nem elérhető";
+
+    function closeSmokeTest() {
+      if (available) {
+        cef.emit("fayrpg:smoke:close", "close");
+        cef.set_focus(false);
+      }
+    }
+
+    document.getElementById("close").addEventListener("click", closeSmokeTest);
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeSmokeTest();
+    });
+  </script>
+</body>
+</html>

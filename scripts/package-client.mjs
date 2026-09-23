@@ -111,6 +111,7 @@ for (const [source, destination] of inputs) {
   await cp(source, destination);
 }
 await cp(path.join(cefRoot, "Resources", "locales"), path.join(cefOutputDir, "locales"), { recursive: true });
+await cp(path.join(rootDir, "client", "assets"), path.join(cefOutputDir, "assets"), { recursive: true });
 
 const packagedFiles = await walk(outputDir);
 const packageManifest = {
