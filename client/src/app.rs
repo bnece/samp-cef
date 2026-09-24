@@ -178,7 +178,10 @@ impl App {
 
         // apply hook to WndProc
         while !wndproc::initialize(&wndproc::WndProcSettings {
-            callback: shitty,
+            // Do not run the client main loop from the window procedure. Windows may
+            // synchronously re-enter WndProc during focus changes; running the full
+            // loop there aliases global client state and can corrupt the process heap.
+            callback: on_window_message,
             hwnd: client_api::gta::hwnd(),
         }) {
             std::thread::sleep(Duration::from_millis(10));
@@ -325,7 +328,7 @@ fn quit() {
     client_api::wndproc::uninitialize();
 }
 
-fn shitty() {
+fn on_window_message() {
     if let Some(app) = App::get() {
         if !app.samp_ready {
             tracing::info!(
@@ -334,8 +337,6 @@ fn shitty() {
             );
             app.samp_ready = true;
             app.manager.lock().initialize_cef();
-        } else if !app.window_focused {
-            mainloop(); //
         }
     }
 }
