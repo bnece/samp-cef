@@ -14,6 +14,13 @@ members = [
     "cef-interface",
     "network",
 ]
+exclude = ["vendor"]
+
+# quinn-udp 0.5.14 with the Wine fixes in vendor/quinn-udp: its Windows socket setup
+# treats IPV6_V6ONLY and IP_RECVECN as mandatory, and Wine answers neither, so the
+# CEF network client could not create its socket at all.
+[patch.crates-io]
+quinn-udp = { path = "vendor/quinn-udp" }
 
 
 [profile.release]

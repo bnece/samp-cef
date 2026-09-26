@@ -25,6 +25,25 @@ use crate::{
 #[derive(Debug)]
 pub struct UdpSocketState {
     last_send_error: Mutex<Instant>,
+    ecn_v4_supported: bool,
+    ecn_v6_supported: bool,
+}
+
+/// `Ok(false)` when the Winsock provider does not know the ECN receive option.
+fn ecn_supported(result: io::Result<()>) -> io::Result<bool> {
+    match result {
+        Ok(()) => Ok(true),
+        Err(e)
+            if matches!(
+                e.raw_os_error(),
+                Some(code) if code == WinSock::WSAENOPROTOOPT || code == WinSock::WSAEOPNOTSUPP
+            ) =>
+        {
+            debug!("ECN disabled, receive option unsupported: {e}");
+            Ok(false)
+        }
+        Err(e) => Err(e),
+    }
 }
 
 impl UdpSocketState {
@@ -54,9 +73,15 @@ impl UdpSocketState {
                 &mut len,
             );
             if rc == -1 {
-                return Err(io::Error::last_os_error());
+                // Wine rejects IPV6_V6ONLY on an AF_INET socket (WSAEOPNOTSUPP) where Windows
+                // answers. Only an IPv6 socket can be dual-stack, so an IPv4 one needs no answer.
+                if is_ipv6 {
+                    return Err(io::Error::last_os_error());
+                }
+                true
+            } else {
+                result != 0
             }
-            result != 0
         };
         let is_ipv4 = addr.as_socket_ipv4().is_some() || !v6only;
 
@@ -67,6 +92,9 @@ impl UdpSocketState {
                 "network stack does not support WSARecvMsg function",
             ));
         }
+
+        let mut ecn_v4_supported = true;
+        let mut ecn_v6_supported = true;
 
         if is_ipv4 {
             set_socket_option(
@@ -82,12 +110,14 @@ impl UdpSocketState {
                 WinSock::IP_PKTINFO,
                 OPTION_ON,
             )?;
-            set_socket_option(
+            // ECN is best-effort, as in quinn-udp 0.6.2: Wine has no IP_RECVECN
+            // (WSAENOPROTOOPT), and QUIC works without ECN.
+            ecn_v4_supported = ecn_supported(set_socket_option(
                 &*socket.0,
                 WinSock::IPPROTO_IP,
                 WinSock::IP_RECVECN,
                 OPTION_ON,
-            )?;
+            ))?;
         }
 
         if is_ipv6 {
@@ -105,17 +135,21 @@ impl UdpSocketState {
                 OPTION_ON,
             )?;
 
-            set_socket_option(
+            // ECN is best-effort, as in quinn-udp 0.6.2: Wine has no IPV6_RECVECN
+            // (WSAENOPROTOOPT), and QUIC works without ECN.
+            ecn_v6_supported = ecn_supported(set_socket_option(
                 &*socket.0,
                 WinSock::IPPROTO_IPV6,
                 WinSock::IPV6_RECVECN,
                 OPTION_ON,
-            )?;
+            ))?;
         }
 
         let now = Instant::now();
         Ok(Self {
             last_send_error: Mutex::new(now.checked_sub(2 * IO_ERROR_LOG_INTERVAL).unwrap_or(now)),
+            ecn_v4_supported,
+            ecn_v6_supported,
         })
     }
 
@@ -153,7 +187,7 @@ impl UdpSocketState {
     /// If you would like to handle these errors yourself, use [`UdpSocketState::try_send`]
     /// instead.
     pub fn send(&self, socket: UdpSockRef<'_>, transmit: &Transmit<'_>) -> io::Result<()> {
-        match send(socket, transmit) {
+        match send(socket, transmit, self.ecn_v4_supported, self.ecn_v6_supported) {
             Ok(()) => Ok(()),
             Err(e) if e.kind() == io::ErrorKind::WouldBlock => Err(e),
             Err(e) => {
@@ -166,7 +200,7 @@ impl UdpSocketState {
 
     /// Sends a [`Transmit`] on the given socket without any additional error handling.
     pub fn try_send(&self, socket: UdpSockRef<'_>, transmit: &Transmit<'_>) -> io::Result<()> {
-        send(socket, transmit)
+        send(socket, transmit, self.ecn_v4_supported, self.ecn_v6_supported)
     }
 
     pub fn recv(
@@ -322,7 +356,12 @@ impl UdpSocketState {
     }
 }
 
-fn send(socket: UdpSockRef<'_>, transmit: &Transmit<'_>) -> io::Result<()> {
+fn send(
+    socket: UdpSockRef<'_>,
+    transmit: &Transmit<'_>,
+    ecn_v4_supported: bool,
+    ecn_v6_supported: bool,
+) -> io::Result<()> {
     // we cannot use [`socket2::sendmsg()`] and [`socket2::MsgHdr`] as we do not have access
     // to the inner field which holds the WSAMSG
     let mut ctrl_buf = cmsg::Aligned([0; CMSG_LEN]);
@@ -382,8 +421,10 @@ fn send(socket: UdpSockRef<'_>, transmit: &Transmit<'_>) -> io::Result<()> {
     let is_ipv4 = transmit.destination.is_ipv4()
         || matches!(transmit.destination.ip(), IpAddr::V6(addr) if addr.to_ipv4_mapped().is_some());
     if is_ipv4 {
-        encoder.push(WinSock::IPPROTO_IP, WinSock::IP_ECN, ecn);
-    } else {
+        if ecn_v4_supported {
+            encoder.push(WinSock::IPPROTO_IP, WinSock::IP_ECN, ecn);
+        }
+    } else if ecn_v6_supported {
         encoder.push(WinSock::IPPROTO_IPV6, WinSock::IPV6_ECN, ecn);
     }
 
