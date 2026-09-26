@@ -186,7 +186,7 @@ dependencies = [
  "cef-messages",
  "cef-network",
  "cef-sys",
- "client-api",
+ "client-api 1.0.0 (git+https://github.com/bnece/samp-client-api.git?rev=297dcca0de7a42d2335d01bf52698ad47a979361)",
  "cpal",
  "crossbeam-channel",
  "crossbeam-queue",
@@ -214,7 +214,7 @@ version = "0.1.0"
 dependencies = [
  "cef",
  "cef-api",
- "client-api",
+ "client-api 1.0.0 (git+https://github.com/zottce/samp-client-api.git?rev=d497ffad4903d9cc3f02869c744c3c3d96217cbb)",
  "region",
 ]
 
@@ -362,6 +362,16 @@ checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 name = "client-api"
 version = "1.0.0"
 source = "git+https://github.com/bnece/samp-client-api.git?rev=297dcca0de7a42d2335d01bf52698ad47a979361#297dcca0de7a42d2335d01bf52698ad47a979361"
+dependencies = [
+ "log",
+ "retour",
+ "winapi",
+]
+
+[[package]]
+name = "client-api"
+version = "1.0.0"
+source = "git+https://github.com/zottce/samp-client-api.git?rev=d497ffad4903d9cc3f02869c744c3c3d96217cbb#d497ffad4903d9cc3f02869c744c3c3d96217cbb"
 dependencies = [
  "log",
  "retour",
@@ -1675,8 +1685,6 @@ dependencies = [
 [[package]]
 name = "quinn-udp"
 version = "0.5.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "addec6a0dcad8a8d96a771f815f0eaf55f9d1805756410b39f5fa81332574cbd"
 dependencies = [
  "cfg_aliases",
  "libc",

@@ -98,7 +98,14 @@ struct Network {
 impl Network {
     fn new(event_tx: Sender<Event>, event_rx: Receiver<Event>) -> Option<Network> {
         let addr = "0.0.0.0:0".parse().unwrap();
-        let socket = handle_result(Socket::new_client(addr))?;
+        let socket = match Socket::new_client(addr) {
+            Ok(socket) => socket,
+            Err(error) => {
+                // handle_result prints to stdout, which the game discards.
+                tracing::error!(error = ?error, "cannot create CEF network socket");
+                return None;
+            }
+        };
 
         Some(Network {
             connection_state: ConnectionState::Disconnected,
